@@ -22,7 +22,7 @@ PrismEventBus.unregister(this, ['walk']);
 
 Then post event anywhere
 
-```html
+```javascript
 // Post immediately
 PrismEventBus.post(new CustomEvent('talk', {
     bubbles: false,

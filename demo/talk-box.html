@@ -1,0 +1,164 @@
+<link rel="import" href="../../polymer/polymer.html" />
+<link rel="import" href="../prism-event-bus.html" />
+
+<dom-module id="talk-message">
+    <template>
+        <style>
+            .message {
+                display: flex;
+                flex-direction: row;
+            }
+
+            .message .time {
+                margin-right: 3px;
+                border-bottom: 2px double grey;
+            }
+
+            .message .text {
+                word-wrap: break-word;
+            }
+        </style>
+        <div class="message">
+            <span class="time">[[time]]</span>
+            <span class="text">[[text]]</span>
+        </div>
+    </template>
+    <script>
+        'use strict';
+        class TalkMessage extends Polymer.Element {
+            static get is() { return 'talk-message'; }
+            static get properties() {
+                return {
+                    time: String,
+                    text: String
+                }
+            }
+
+            constructor() {
+                super();
+                this.time = this.now();
+            }
+
+            now() {
+                let time = new Date(),
+                    hours = time.getHours(),
+                    minutes = time.getMinutes();
+
+                if (hours < 10) hours = '0' + hours;
+                if (minutes < 10) minutes = '0' + minutes;
+                return hours + ':' + minutes;
+            }
+        }
+        customElements.define(TalkMessage.is, TalkMessage);
+    </script>
+</dom-module>
+
+<dom-module id="talk-box">
+    <template>
+        <style>
+            .messages {
+                display: block;
+                width: 100%;
+                margin-bottom: 2px;
+                border: 1px inset grey;
+                height: 100px;
+                overflow-y: scroll;
+            }
+
+            .controlls {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                margin-bottom: 2em;
+            }
+
+            .controlls select {
+                flex-grow: 0;
+            }
+
+            .controlls input {
+                flex-grow: 1;
+            }
+
+            .controlls button {
+                flex-grow: 0;
+            }
+        </style>
+        <h3>[[name]]</h3>
+        <div class="messages" id="messages"></div>
+        <div class="controlls">
+            <select id="message-target" value="{{channel::change}}">
+                <template is="dom-repeat" items="[[targets]]" as="option">
+                    <option value="[[option]]">To: [[option]]</option>
+                </template>
+            </select> &nbsp;
+            <input type="text" value="{{content::input}}" /> &nbsp;
+            <button on-click="send" disabled$="[[!hasContent]]">Send</button>
+        </div>
+    </template>
+    <script>
+        'use strict';
+        class TalkBox extends Polymer.Element {
+            static get is() { return 'talk-box'; }
+            static get properties() {
+                return {
+                    name: {
+                        type: String,
+                        observer: '_nameChanged'
+                    },
+                    channel: String,
+                    content: String,
+                    hasContent: {
+                        type: Boolean,
+                        computed: '_computeHasContent(content)'
+                    },
+                    targets: {
+                        type: Array,
+                        observer: '_targetsChanged'
+                    }
+                }
+            }
+
+            _computeHasContent(content) {
+                return content && content !== '';
+            }
+
+            _targetsChanged(n, o) {
+                this.channel = (n || [''])[0];
+            }
+
+            _nameChanged(n, o) {
+                if (n) {
+                    PrismEventBus.register(this, ['talk-to-' + n]);
+                    this.addEventListener('talk-to-' + n, e => this.receive(e, e.detail));
+                }
+                if (o) {
+                    PrismEventBus.unregister(this, ['talk-to-' + o]);
+                    this.removeEventListener('talk-to-' + o);
+                }
+            }
+
+            receive(e, detail) {
+                let msg = document.createElement('talk-message');
+                msg.text = detail.text || '';
+                this.$.messages.appendChild(msg);
+                this.$.messages.scrollTop = this.$.messages.scrollHeight;
+            }
+
+            send() {
+                if (this.hasContent) {
+                    // dispatch event via event-bus between elements
+                    PrismEventBus.post(new CustomEvent('talk-to-' + this.channel, {
+                        bubbles: false,
+                        composed: true,
+                        detail: {
+                            text: `${this.name} says: ${this.content}`
+                        }
+                    }));
+                }
+                this.content = '';
+            }
+        }
+        customElements.define(TalkBox.is, TalkBox);
+    </script>
+</dom-module>

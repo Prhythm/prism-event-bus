@@ -177,15 +177,21 @@
                     // Append new event type if types is added
                     subscriber.types = union;
                     console.debug(`[${PrismEventBus.is}] event ${types} of ${element.tagName} is registered`);
-                    // poll event queue for new event types
-                    this._poll(element, types)
+                    // To be avoid missing
+                    Polymer.Async.timeOut.run(() => {
+                        // poll event queue for new event types
+                        this._poll(element, types)
+                    }, 100);
                 }
             } else {
                 // No registered subscriber found, register new one
                 this.set('subscribers', [{ target: element, types: types }].concat(this.subscribers));
                 console.debug(`[${PrismEventBus.is}] event ${types} of ${element.tagName} is registered`);
-                // poll event queue for new subscriber
-                this._poll(element, types);
+                // To be avoid missing
+                Polymer.Async.timeOut.run(() => {
+                    // poll event queue for new subscriber
+                    this._poll(element, types)
+                }, 100);
             }
         }
 

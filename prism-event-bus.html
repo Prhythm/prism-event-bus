@@ -173,7 +173,7 @@
             let subscriber = this.subscribers.find(item => item.target === element);
             if (subscriber) {
                 let union = this._union(subscriber.types, types);
-                if (union.length > subscriber.types) {
+                if (union.length > subscriber.types.length) {
                     // Append new event type if types is added
                     subscriber.types = union;
                     console.debug(`[${PrismEventBus.is}] event ${types} of ${element.tagName} is registered`);
